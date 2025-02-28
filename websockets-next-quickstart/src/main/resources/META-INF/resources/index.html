@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quarkus WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chat {
+            width: 400px;
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+        }
+        #message {
+            width: 300px;
+            padding: 5px;
+        }
+        #send {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quarkus WebSocket Chat</h1>
+    <div id="chat"></div>
+    <input type="text" id="username" placeholder="Enter your name">
+    <button id="connect">Connect</button>
+    <br><br>
+    <input type="text" id="message" placeholder="Type a message">
+    <button id="send">Send</button>
+
+    <script>
+        let ws;
+        const chat = document.getElementById('chat');
+        const usernameInput = document.getElementById('username');
+        const connectButton = document.getElementById('connect');
+        const messageInput = document.getElementById('message');
+        const sendButton = document.getElementById('send');
+
+        connectButton.addEventListener('click', () => {
+            const username = usernameInput.value;
+            if (username) {
+                ws = new WebSocket(`ws://localhost:8080/chat/${username}`);
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    const messageElement = document.createElement('div');
+                    if (message.type === 'USER_JOINED') {
+                        messageElement.textContent = `${message.from} joined the chat.`;
+                    } else if (message.type === 'USER_LEFT') {
+                        messageElement.textContent = `${message.from} left the chat.`;
+                    } else {
+                        messageElement.textContent = `${message.from}: ${message.message}`;
+                    }
+                    chat.appendChild(messageElement);
+                    chat.scrollTop = chat.scrollHeight;
+                };
+                connectButton.disabled = true;
+                usernameInput.disabled = true;
+                sendButton.disabled = false;
+            }
+        });
+
+        sendButton.addEventListener('click', () => {
+            const message = messageInput.value;
+            if (message) {
+                ws.send(JSON.stringify({ type: 'CHAT_MESSAGE', from: usernameInput.value, message }));
+                messageInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
